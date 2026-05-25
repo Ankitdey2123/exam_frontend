@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import API from "../API_Service/apiService";
 import toast from "react-hot-toast";
-import { Trash2, UserCog } from "lucide-react"; // ✅ added icon
+import { Eye, EyeOff, Trash2, UserCog } from "lucide-react"; // ✅ added icon
 
 interface User {
     id: number;
@@ -9,6 +9,20 @@ interface User {
     email: string;
     status: boolean;
     isDeleted: boolean;
+}
+
+// ================= ROLE INTERFACE =================
+interface Role {
+    id: number;
+    name: string;
+    description: string;
+}
+
+// ================= ROLE INTERFACE =================
+interface AssignedRole {
+    userId: number;
+    roleId: number;
+    roleName: string;
 }
 
 export default function PlatformUserPage() {
@@ -19,6 +33,14 @@ export default function PlatformUserPage() {
     const [showAssignModal, setShowAssignModal] = useState(false);
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [selectedRole, setSelectedRole] = useState("");
+
+    const [roles, setRoles] = useState<Role[]>([]);
+
+    const [assignedRoles, setAssignedRoles] =
+        useState<AssignedRole[]>([]);
+
+    const [showPassword, setShowPassword] =
+        useState(false);
 
     const [formData, setFormData] = useState({
         name: "",
@@ -31,21 +53,139 @@ export default function PlatformUserPage() {
     // ================= FETCH USERS =================
     const fetchUsers = async () => {
         try {
-            const res = await API.get("/super/v1/platformuser", {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
 
-            setUsers(res.data.data);
+            const res = await API.get(
+                "/super/v1/platformuser",
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            // ✅ SHOW ONLY PLATFORM USERS
+            const filteredUsers =
+                res.data.data.filter((user: User) => {
+
+                    // ❌ HIDE DELETED USERS
+                    if (user.isDeleted) {
+                        return false;
+                    }
+
+                    // ✅ SHOW SUPER ADMIN
+                    if (
+                        user.email.endsWith("@superadmin.com")
+                    ) {
+                        return true;
+                    }
+
+                    // ✅ SHOW ADMIN
+                    if (
+                        user.email.endsWith("@admin.com")
+                    ) {
+                        return true;
+                    }
+
+                    // ✅ SHOW TEACHER
+                    if (
+                        user.email.endsWith("@teacher.com")
+                    ) {
+                        return true;
+                    }
+
+                    // ❌ HIDE STUDENTS
+                    return false;
+                });
+
+            setUsers(filteredUsers);
+
         } catch {
+
             toast.error("Failed to fetch users");
+
         }
     };
 
     useEffect(() => {
         fetchUsers();
     }, []);
+
+    // ================= FETCH ROLES =================
+    const fetchRoles = async () => {
+
+        try {
+
+            const res = await API.get(
+                "/super/v1/getallrole",
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setRoles(res.data.data);
+
+        } catch {
+
+            toast.error(
+                "Failed to fetch roles"
+            );
+
+        }
+    };
+
+    // ================= USE EFFECT =================
+    useEffect(() => {
+
+        fetchUsers();
+
+        fetchRoles();
+
+    }, []);
+
+    // ================= FETCH ASSIGNED ROLES =================
+    const fetchAssignedRoles = async () => {
+
+        try {
+
+            const res = await API.get(
+                "/super/v1/getuserallrole",
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            setAssignedRoles(res.data.data);
+
+        } catch {
+
+            toast.error(
+                "Failed to fetch assigned roles"
+            );
+
+        }
+    };
+
+    useEffect(() => {
+
+        fetchUsers();
+
+        fetchRoles();
+
+        fetchAssignedRoles();
+
+    }, []);
+
+    // ================= GET USER ASSIGNED ROLES =================
+    const getUserRoles = (userId: number) => {
+
+        return assignedRoles.filter(
+            (role) => role.userId === userId
+        );
+    };
 
     // ================= HANDLE CHANGE =================
     const handleChange = (e: any) => {
@@ -165,6 +305,7 @@ export default function PlatformUserPage() {
     // ================= ROLE =================
     const getRole = (email: string) => {
         if (email.includes("@admin")) return "Super Admin";
+        if (email.includes("@superadmin")) return "Super Admin";
         if (email.includes("@teacher")) return "Platform User";
         return "User";
     };
@@ -253,8 +394,8 @@ export default function PlatformUserPage() {
                                         onClick={() => handleDelete(user.id)}
                                         disabled={user.isDeleted}
                                         className={`p-2 rounded ${user.isDeleted
-                                                ? "bg-gray-200 cursor-not-allowed opacity-50"
-                                                : "hover:bg-red-100"
+                                            ? "bg-gray-200 cursor-not-allowed opacity-50"
+                                            : "hover:bg-red-100"
                                             }`}
                                     >
                                         <Trash2
@@ -275,29 +416,103 @@ export default function PlatformUserPage() {
 
             {/* ================= ASSIGN ROLE MODAL ================= */}
             {showAssignModal && selectedUser && (
+
                 <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
+
                     <div className="bg-white p-6 rounded w-[400px]">
+
                         <h2 className="text-lg font-bold mb-4">
                             Assign Role
                         </h2>
 
-                        <p className="mb-2 font-semibold">
+                        {/* USER EMAIL */}
+                        <p className="mb-3 font-semibold">
                             {selectedUser.email}
                         </p>
 
+                        {/* ALREADY ASSIGNED ROLES */}
+                        <div className="mb-4">
+
+                            <p className="text-sm font-semibold mb-2">
+                                Already Assigned Roles
+                            </p>
+
+                            <div className="flex flex-wrap gap-2">
+
+                                {getUserRoles(selectedUser.id)
+                                    .length > 0 ? (
+
+                                    getUserRoles(selectedUser.id)
+                                        .map((role) => (
+
+                                            <span
+                                                key={role.roleId}
+                                                className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm"
+                                            >
+                                                {role.roleName}
+                                            </span>
+
+                                        ))
+
+                                ) : (
+
+                                    <span className="text-gray-500 text-sm">
+                                        No roles assigned
+                                    </span>
+
+                                )}
+
+                            </div>
+
+                        </div>
+
+                        {/* ROLE SELECT */}
                         <select
                             value={selectedRole}
-                            onChange={(e) => setSelectedRole(e.target.value)}
+                            onChange={(e) =>
+                                setSelectedRole(
+                                    e.target.value
+                                )
+                            }
                             className="w-full mb-4 p-2 border rounded"
                         >
-                            <option value="">Select Role</option>
-                            <option value="admin">Admin</option>
-                            <option value="teacher">Teacher</option>
-                            <option value="student">Student</option>
+
+                            <option value="">
+                                Select Role
+                            </option>
+
+                            {roles
+                                .filter((role) => {
+
+                                    // REMOVE ALREADY ASSIGNED ROLES
+                                    return !getUserRoles(
+                                        selectedUser.id
+                                    ).some(
+                                        (assignedRole) =>
+                                            assignedRole.roleName ===
+                                            role.name
+                                    );
+                                })
+                                .map((role) => (
+
+                                    <option
+                                        key={role.id}
+                                        value={role.name}
+                                    >
+                                        {role.name}
+                                    </option>
+
+                                ))}
+
                         </select>
 
                         <div className="flex justify-end gap-3">
-                            <button onClick={() => setShowAssignModal(false)}>
+
+                            <button
+                                onClick={() =>
+                                    setShowAssignModal(false)
+                                }
+                            >
                                 Cancel
                             </button>
 
@@ -307,9 +522,13 @@ export default function PlatformUserPage() {
                             >
                                 Assign
                             </button>
+
                         </div>
+
                     </div>
+
                 </div>
+
             )}
 
             {/* CREATE MODAL (UNCHANGED) */}
@@ -336,17 +555,41 @@ export default function PlatformUserPage() {
                             className="w-full mb-3 p-2 border rounded"
                         />
 
-                        <input
-                            type="password"
-                            name="password"
-                            placeholder="Password"
-                            value={formData.password}
-                            onChange={handleChange}
-                            className="w-full mb-4 p-2 border rounded"
-                        />
+                        <div className="relative mb-4">
 
+                            <input
+                                type={
+                                    showPassword
+                                        ? "text"
+                                        : "password"
+                                }
+                                name="password"
+                                placeholder="Password"
+                                value={formData.password}
+                                onChange={handleChange}
+                                className="w-full p-2 border rounded pr-10"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() =>
+                                    setShowPassword(
+                                        !showPassword
+                                    )
+                                }
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500"
+                            >
+                                {showPassword ? (
+                                    <EyeOff size={18} />
+                                ) : (
+                                    <Eye size={18} />
+                                )}
+                            </button>
+
+                        </div>
                         <div className="flex justify-end gap-3">
-                            <button onClick={() => setShowModal(false)}>
+                            <button onClick={() => setShowModal(false)}
+                                className="px-3 py-2 bg-gray-300 rounded">
                                 Cancel
                             </button>
 

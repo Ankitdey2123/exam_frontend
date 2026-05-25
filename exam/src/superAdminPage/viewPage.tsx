@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
 import API from "../API_Service/apiService";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
+import { ArrowLeft } from "lucide-react";
 
 interface Question {
     id: number;
@@ -21,7 +22,7 @@ export default function ViewQuestionPage() {
     const [questions, setQuestions] = useState<Question[]>([]);
     const [optionsMap, setOptionsMap] = useState<Record<number, Option[]>>({});
     const [loading, setLoading] = useState(true);
-
+    const Navigate = useNavigate();
     // ================= FETCH QUESTIONS + OPTIONS =================
     const fetchQuestions = async () => {
         try {
@@ -89,6 +90,15 @@ export default function ViewQuestionPage() {
     // ================= UI =================
     return (
         <div className="p-6">
+            <button
+                onClick={() => Navigate(-1)}
+                className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-200 transition"
+            >
+                <ArrowLeft size={20} />
+                <span className="font-medium">
+                    Back
+                </span>
+            </button>
             <h1 className="text-xl font-bold mb-4">Questions</h1>
 
             {questions.length === 0 ? (
@@ -113,8 +123,8 @@ export default function ViewQuestionPage() {
                                     <li
                                         key={opt.id}
                                         className={`p-2 rounded flex justify-between ${opt.isCorrect
-                                                ? "bg-green-100 text-green-700 font-semibold"
-                                                : "bg-gray-100"
+                                            ? "bg-green-100 text-green-700 font-semibold"
+                                            : "bg-gray-100"
                                             }`}
                                     >
                                         <span>

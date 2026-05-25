@@ -293,7 +293,7 @@ export default function RolePage() {
                                             fetchAssignedPermissions(item.id);
                                         }}
                                         className="p-2 hover:bg-gray-200 rounded"
-                                        title="Assign Role"
+                                        title="Assign Permission"
                                     >
                                         <ShieldPlus size={18} className="text-green-600" />
                                     </button>
@@ -314,13 +314,13 @@ export default function RolePage() {
                                     </button>
 
                                     {/* DELETE */}
-                                    <button
+                                    {/* <button
                                         onClick={() => handleDelete(item.id)}
                                         className="p-2 hover:bg-gray-200 rounded"
                                         title="delete"
                                     >
                                         <Trash2 size={18} className="text-red-600" />
-                                    </button>
+                                    </button> */}
                                 </td>
                             </tr>
                         ))}

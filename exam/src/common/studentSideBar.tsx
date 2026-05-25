@@ -1,46 +1,27 @@
 import {
-    LayoutDashboard,
-    ShieldCheck,
-    Users,
-    Building2,
     FileText,
     LogOut,
-    Key,
-    LucideSchool2,
-    CircleQuestionMark,
     LibraryBig,
+    Home,
+    UserCog,
 } from "lucide-react";
 
 import { useNavigate, useLocation } from "react-router-dom";
 import banner from "../assets/banner.png";
 
-export default function Sidebar() {
+export default function StudentSidebar() {
     const navigate = useNavigate();
     const location = useLocation();
 
-    // ✅ Get user type
-    const userType = sessionStorage.getItem("userType");
 
     // ✅ All menu items
     const allMenuItems = [
-        { id: "dashboard", name: "Dashboard", icon: LayoutDashboard },
-        { id: "permission", name: "Permission", icon: Key },
-        { id: "role", name: "Role", icon: ShieldCheck },
-        { id: "platform-user", name: "Platform User", icon: Users },
-        { id: "student-user", name: "Student User", icon: Building2 },
-        { id: "exam", name: "Exam", icon: FileText },
-        // { id: "center", name: "Centers", icon: LucideSchool2 },
-        { id: "question", name: "Question", icon: CircleQuestionMark },
-        { id: "course", name: "Course", icon: LibraryBig },
-    ];
+        { id: "home", name: "Home", icon: Home },
+        {id: "stu-course",name:"Course",icon:LibraryBig},
+        {id:"stu-exam",name:"Exam",icon:FileText},
+        {id:"stu-profile",name:"Profile",icon:UserCog}
 
-    // ✅ Filter menu based on role
-    const menuItems =
-        userType === "admin"
-            ? allMenuItems
-            : allMenuItems.filter((item) =>
-                ["dashboard", "exam", "question","course"].includes(item.id)
-            );
+    ];
 
     const handleLogout = () => {
         sessionStorage.removeItem("accessToken");
@@ -65,7 +46,7 @@ export default function Sidebar() {
 
                 {/* MENU */}
                 <div className="mt-4">
-                    {menuItems.map((item) => {
+                    {allMenuItems.map((item) => {
                         const Icon = item.icon;
                         const isActive = location.pathname === `/${item.id}`;
 

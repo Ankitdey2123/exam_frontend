@@ -11,6 +11,12 @@ interface Exam {
     isPublished: boolean;
     isDeleted: boolean;
     startTime: string;
+    courseId: number | null;
+}
+
+interface Course {
+    id: number;
+    title: string;
 }
 
 export default function ExamPage() {
@@ -22,7 +28,7 @@ export default function ExamPage() {
     const [selectedExam, setSelectedExam] = useState<Exam | null>(null);
     const [editData, setEditData] = useState({
         date: "",
-        timeSlot: "",
+        startTime: "",
     });
 
     const [formData, setFormData] = useState({
@@ -30,13 +36,44 @@ export default function ExamPage() {
         duration: "",
         totalMarks: "",
         date: "",
-        timeSlot: "",
+        startTime: "",
+        courseId: "",
     });
+
+
+    const [courses, setCourses] = useState<Course[]>([]);
+    const [courseMap, setCourseMap] = useState<Record<number, string>>({});
 
     const token = sessionStorage.getItem("accessToken");
 
     // ✅ ADD THIS LINE
     const userType = sessionStorage.getItem("userType");
+
+    //fetch course
+    const fetchCourses = async () => {
+        try {
+            const res = await API.get("/super/v1/getallcourse", {
+                headers: { Authorization: `Bearer ${token}` },
+            });
+
+            setCourses(res.data.data);
+
+            // ✅ create id → title map
+            const map: Record<number, string> = {};
+            res.data.data.forEach((course: Course) => {
+                map[course.id] = course.title;
+            });
+
+            setCourseMap(map);
+        } catch {
+            toast.error("Failed to fetch courses");
+        }
+    };
+    useEffect(() => {
+        fetchExams();
+        fetchCourses();
+    }, []);
+
 
     // ================= FETCH =================
     const fetchExams = async () => {
@@ -83,22 +120,21 @@ export default function ExamPage() {
                 !formData.duration ||
                 !formData.totalMarks ||
                 !formData.date ||
-                !formData.timeSlot
+                !formData.startTime
             ) {
                 return toast.error("All fields required");
             }
 
-            const [startTime, endTime] = formData.timeSlot.split("-");
+            // const [startTime, endTime] = formData.timeSlot.split("-");
 
             await API.post(
-                "/teacher/tec/createexam",
+                `/teacher/tec/createexam?courseId=${formData.courseId}`,
                 {
                     title: formData.title,
                     duration: Number(formData.duration),
                     totalMarks: Number(formData.totalMarks),
                     date: formData.date,
-                    startTime,
-                    endTime,
+                    startTime: formData.startTime,
                 },
                 {
                     headers: {
@@ -115,7 +151,8 @@ export default function ExamPage() {
                 duration: "",
                 totalMarks: "",
                 date: "",
-                timeSlot: "",
+                startTime: "",
+                courseId: "",
             });
 
             fetchExams();
@@ -203,12 +240,14 @@ export default function ExamPage() {
 
         const hour = d.getHours().toString().padStart(2, "0");
 
-        let slot = "";
-        if (hour === "10") slot = "10:00-11:00";
-        else if (hour === "12") slot = "12:00-13:00";
-        else if (hour === "14") slot = "14:00-15:00";
+        // let slot = "";
+        // if (hour === "10") slot = "10:00-11:00";
+        // else if (hour === "12") slot = "12:00-13:00";
+        // else if (hour === "14") slot = "14:00-15:00";
 
-        setEditData({ date, timeSlot: slot });
+        const startTime = `${hour}:00`;
+
+        setEditData({ date, startTime });
         setShowEditModal(true);
     };
 
@@ -217,18 +256,17 @@ export default function ExamPage() {
         if (userType === "teacher") return; // ✅ ADDED
 
         try {
-            if (!editData.date || !editData.timeSlot || !selectedExam) {
+            if (!editData.date || !editData.startTime || !selectedExam) {
                 return toast.error("All fields required");
             }
 
-            const [startTime, endTime] = editData.timeSlot.split("-");
+            // const [startTime, endTime] = editData.timeSlot.split("-");
 
             await API.put(
                 `/super/v1/changetimedate/${selectedExam.id}`,
                 {
                     date: editData.date,
-                    startTime,
-                    endTime,
+                    startTime: editData.startTime,
                 },
                 {
                     headers: {
@@ -264,10 +302,11 @@ export default function ExamPage() {
                 <table className="w-full text-center">
                     <thead className="bg-gray-100">
                         <tr>
+                            <th className="p-3">Course</th>
                             <th className="p-3">Title</th>
-                            <th>Duration</th>
+                            <th className="p-3">Duration</th>
                             <th>Total Marks</th>
-                            <th>Date</th>
+                            <th className="p-3">Date</th>
                             <th>Time</th>
                             <th>Published</th>
                             <th>Status</th>
@@ -278,6 +317,13 @@ export default function ExamPage() {
                     <tbody>
                         {exams.map((exam) => (
                             <tr key={exam.id} className="border-t">
+                                <td>
+                                    {exam.courseId ? (
+                                        courseMap[exam.courseId] || "Loading..."
+                                    ) : (
+                                        <span className="font-bold">---</span>
+                                    )}
+                                </td>
                                 <td className="p-3">{exam.title}</td>
                                 <td>{formatDuration(exam.duration)}</td>
                                 <td>{exam.totalMarks}</td>
@@ -310,24 +356,24 @@ export default function ExamPage() {
 
                                 <td className="flex justify-center gap-3 p-2">
                                     {/* EDIT */}
-                                    <button
+                                    {/* <button
                                         onClick={() => handleEditOpen(exam)}
                                         disabled={exam.isDeleted || userType === "teacher"}
                                         className={`p-2 rounded ${exam.isDeleted || userType === "teacher"
-                                                ? "bg-gray-200 cursor-not-allowed opacity-50"
-                                                : "hover:bg-blue-100"
+                                            ? "bg-gray-200 cursor-not-allowed opacity-50"
+                                            : "hover:bg-blue-100"
                                             }`}
                                     >
                                         <Edit2 size={18} />
-                                    </button>
+                                    </button> */}
 
                                     {/* PUBLISH */}
                                     <button
                                         onClick={() => handlePublish(exam.id)}
                                         disabled={exam.isPublished || userType === "teacher"}
                                         className={`p-2 rounded ${exam.isPublished || userType === "teacher"
-                                                ? "bg-gray-200 cursor-not-allowed opacity-50"
-                                                : "hover:bg-green-100"
+                                            ? "bg-gray-200 cursor-not-allowed opacity-50"
+                                            : "hover:bg-green-100"
                                             }`}
                                     >
                                         <Upload size={18} />
@@ -338,8 +384,8 @@ export default function ExamPage() {
                                         onClick={() => handleDelete(exam.id)}
                                         disabled={exam.isDeleted || userType === "teacher"}
                                         className={`p-2 rounded ${exam.isDeleted || userType === "teacher"
-                                                ? "bg-gray-200 cursor-not-allowed opacity-50"
-                                                : "hover:bg-red-100"
+                                            ? "bg-gray-200 cursor-not-allowed opacity-50"
+                                            : "hover:bg-red-100"
                                             }`}
                                     >
                                         <Trash2 size={18} />
@@ -356,6 +402,21 @@ export default function ExamPage() {
                 <div className="fixed inset-0 bg-black/40 flex justify-center items-center">
                     <div className="bg-white p-6 rounded w-[400px]">
                         <h2 className="text-lg font-bold mb-4">Create Exam</h2>
+
+                        <select
+                            name="courseId"
+                            value={formData.courseId}
+                            onChange={handleChange}
+                            className="w-full mb-3 p-2 border rounded"
+                        >
+                            <option value="">Select Course</option>
+
+                            {courses.map((course) => (
+                                <option key={course.id} value={course.id}>
+                                    {course.title}
+                                </option>
+                            ))}
+                        </select>
 
                         <input
                             name="title"
@@ -390,22 +451,30 @@ export default function ExamPage() {
                         />
 
                         <select
-                            name="timeSlot"
-                            value={formData.timeSlot}
+                            name="startTime"
+                            value={formData.startTime}
                             onChange={handleChange}
                             className="w-full mb-4 p-2 border rounded"
                         >
                             <option value="">Select Time</option>
-                            <option value="10:00-11:00">10-11</option>
-                            <option value="12:00-13:00">12-1</option>
-                            <option value="14:00-15:00">2-3</option>
+                            <option value="10:00">10 A.M</option>
+                            <option value="12:00">12 P.M</option>
+                            <option value="14:00">2 P.M</option>
                         </select>
 
                         <div className="flex justify-end gap-3">
-                            <button onClick={() => setShowModal(false)}>
+                            <button
+                                onClick={() => setShowModal(false)}
+                                className="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400 transition"
+                            >
                                 Cancel
                             </button>
-                            <button onClick={handleCreate}>Create</button>
+                            <button
+                                onClick={handleCreate}
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+                            >
+                                Create
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -434,19 +503,19 @@ export default function ExamPage() {
                         />
 
                         <select
-                            value={editData.timeSlot}
+                            value={editData.startTime}
                             onChange={(e) =>
                                 setEditData({
                                     ...editData,
-                                    timeSlot: e.target.value,
+                                    startTime: e.target.value,
                                 })
                             }
                             className="w-full mb-4 p-2 border rounded"
                         >
                             <option value="">Select Time</option>
-                            <option value="10:00-11:00">10:00 - 11:00</option>
-                            <option value="12:00-13:00">12:00 - 1:00</option>
-                            <option value="14:00-15:00">2:00 - 3:00</option>
+                            <option value="10:00">10:00 A.M</option>
+                            <option value="12:00">12:00 P.M</option>
+                            <option value="14:00">2:00 P.M</option>
                         </select>
 
                         <div className="flex justify-end gap-3">

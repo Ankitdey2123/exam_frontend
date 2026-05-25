@@ -56,8 +56,10 @@ export default function SimpleDashboard() {
 
             setTotalRoles(roleRes.data.data.length);
 
+            //fetch course
+
             const centerRes = await API.get(
-                "http://localhost:8080/api/super/v1/getallexamcenter",
+                "super/v1/getallcourse",
                 { headers: { Authorization: `Bearer ${token}` } }
             );
 
@@ -78,7 +80,7 @@ export default function SimpleDashboard() {
     const stats = [
         { title: "Total Users", value: 120 },
         { title: "Total Exams", value: totalExams },
-        { title: "Centers", value: totalCenters },
+        { title: "Courses", value: totalCenters },
         { title: "Active Roles", value: totalRoles },
     ];
 

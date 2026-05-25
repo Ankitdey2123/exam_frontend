@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import API from "../API_Service/apiService";
 import toast from "react-hot-toast";
+import { ArrowLeft } from "lucide-react";
 
 interface Exam {
     id: number;
@@ -164,6 +165,15 @@ export default function SetQuestionPage() {
     return (
         <div className="p-6">
             {/* HEADER */}
+            <button
+                onClick={() => navigate(-1)}
+                className="flex items-center gap-2 px-3 py-2 rounded hover:bg-gray-200 transition"
+            >
+                <ArrowLeft size={20} />
+                <span className="font-medium">
+                    Back
+                </span>
+            </button>
             <h1 className="text-2xl font-bold mb-4">
                 Set Questions for: {exam?.title || "Loading..."}
             </h1>

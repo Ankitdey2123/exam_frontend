@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import API from "../API_Service/apiService";
+import logo from "../assets/logo.png";
 
 export default function LoginPage() {
     const [email, setEmail] = useState("");
@@ -10,53 +11,58 @@ export default function LoginPage() {
 
     const navigate = useNavigate();
 
-const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+    const handleLogin = async (e: React.FormEvent) => {
+        e.preventDefault();
 
-    if (!email || !password) {
-        setError("All fields are required");
-        return;
-    }
-
-    try {
-        const res = await API.post("http://localhost:8080/api/auth/login", {
-            email,
-            password,
-        });
-
-        // ✅ Store token
-        sessionStorage.setItem("accessToken", res.data.accessToken);
-
-        // ✅ Determine user type from email
-        let userType = "";
-
-        if (email.includes("@admin") || email.includes("@superadmin")) {
-            userType = "admin";
-        } else if (email.includes("@teacher")) {
-            userType = "teacher";
-        } else {
-            userType = "student"; // optional fallback
+        if (!email || !password) {
+            setError("All fields are required");
+            return;
         }
 
-        // ✅ Store userType
-        sessionStorage.setItem("userType", userType);
+        // ✅ ALLOW ONLY PLATFORM USERS
+        const isPlatformUser =
+            email.endsWith("@admin.com") ||
+            email.endsWith("@superadmin.com") ||
+            email.endsWith("@teacher.com");
 
-        // ✅ Navigate
-        navigate("/dashboard");
+        if (!isPlatformUser) {
+            setError("Only Admin and Platform users can login");
+            return;
+        }
 
-    } catch (err: any) {
-        setError(err.response?.data?.message || "Login failed");
-    }
-};
+        try {
+            const res = await API.post(
+                "http://localhost:8080/api/auth/login",
+                { email, password }
+            );
+
+            sessionStorage.setItem("accessToken", res.data.accessToken);
+
+            let userType = "";
+            if (email.includes("@admin") || email.includes("@superadmin")) {
+                userType = "admin";
+            } else if (email.includes("@teacher")) {
+                userType = "teacher";
+            } else {
+                userType = "student";
+            }
+
+            sessionStorage.setItem("userType", userType);
+            navigate("/dashboard");
+
+        } catch (err: any) {
+            setError(err.response?.data?.message || "Login failed");
+        }
+    };
 
     return (
         <div
             className="flex h-screen overflow-hidden"
             style={{
                 background:
-                    "linear-gradient(-45deg, #007bff, #00c6ff, #2563eb, #38bdf8)",
+                    "linear-gradient(-45deg, #020617, #0f172a, #1e3a8a, #0ea5e9)",
                 backgroundSize: "400% 400%",
-                animation: "gradientMove 10s ease infinite",
+                animation: "gradientMove 12s ease infinite",
             }}
         >
             {/* KEYFRAMES */}
@@ -71,50 +77,50 @@ const handleLogin = async (e: React.FormEvent) => {
             </style>
 
             {/* LEFT SIDE */}
-            <div className="hidden md:flex flex-1 text-white items-center justify-center p-16">
-                <div>
-                    <h1 className="text-4xl mb-5 font-bold">
-                        Online Examination System
-                    </h1>
-                    <p className="text-lg opacity-90">
-                        Manage exams, students, and results easily.
-                    </p>
-                </div>
+            <div className="hidden md:flex flex-1 relative items-center justify-center">
+                <img
+                    src={logo}
+                    alt="CodeMechanica"
+                    className="absolute inset-0 w-full h-full object-cover opacity-20s"
+                />
+
             </div>
 
             {/* RIGHT SIDE */}
-            <div className="flex flex-1 justify-center items-center">
+            {/* RIGHT SIDE */}
+            <div
+                className="flex flex-1 justify-center items-center"
+                style={{
+                    background: "linear-gradient(to right, #000000, #0f172a, #1e3a8a)",
+                }}
+            >
                 <form
                     onSubmit={handleLogin}
                     autoComplete="off"
-                    className="w-[420px] px-9 py-11 rounded-2xl 
-                    bg-white/20 backdrop-blur-xl shadow-2xl flex flex-col"
+                    className="w-[420px] px-10 py-12 rounded-2xl 
+        bg-white/10 backdrop-blur-2xl 
+        border border-white/20 
+        shadow-[0_20px_60px_rgba(0,0,0,0.5)]
+        flex flex-col"
                 >
-                    <h2 className="text-center mb-6 text-black text-xl font-semibold">
+                    <h2 className="text-center mb-8 text-white text-2xl font-semibold">
                         Login
                     </h2>
 
                     {/* EMAIL */}
-                    <div className="relative mb-5">
+                    <div className="mb-5">
                         <input
                             type="email"
                             required
                             autoComplete="email"
-                            placeholder=" "
+                            placeholder="Email Address"
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
-                            className="peer w-full px-3 py-3 border border-gray-300 rounded-md 
-                            bg-white outline-none text-sm transition-all
-                            focus:border-blue-500 focus:scale-[1.02]"
+                            className="w-full px-4 py-3 rounded-md 
+                bg-white/90 text-black text-sm 
+                outline-none border border-transparent
+                focus:border-blue-500 transition-all"
                         />
-                        <label
-                            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm 
-                            bg-white px-1 transition-all
-                            peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-blue-500
-                            peer-valid:top-[-8px] peer-valid:text-xs peer-valid:text-blue-500"
-                        >
-                            Email Address
-                        </label>
                     </div>
 
                     {/* PASSWORD */}
@@ -123,25 +129,19 @@ const handleLogin = async (e: React.FormEvent) => {
                             type={showPassword ? "text" : "password"}
                             required
                             autoComplete="current-password"
-                            placeholder=" "
+                            placeholder="Password"
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
-                            className="peer w-full px-3 py-3 border border-gray-300 rounded-md 
-                            bg-white outline-none text-sm transition-all
-                            focus:border-blue-500 focus:scale-[1.02]"
+                            className="w-full px-4 py-3 rounded-md 
+                bg-white/90 text-black text-sm 
+                outline-none border border-transparent
+                focus:border-blue-500 transition-all"
                         />
-                        <label
-                            className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 text-sm 
-                            bg-white px-1 transition-all
-                            peer-focus:top-[-8px] peer-focus:text-xs peer-focus:text-blue-500
-                            peer-valid:top-[-8px] peer-valid:text-xs peer-valid:text-blue-500"
-                        >
-                            Password
-                        </label>
 
                         <span
                             onClick={() => setShowPassword(!showPassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-blue-600 text-sm cursor-pointer hover:underline"
+                            className="absolute right-4 top-1/2 -translate-y-1/2 
+                text-blue-500 text-sm cursor-pointer"
                         >
                             {showPassword ? "Hide" : "Show"}
                         </span>
@@ -149,7 +149,7 @@ const handleLogin = async (e: React.FormEvent) => {
 
                     {/* ERROR */}
                     {error && (
-                        <p className="text-red-500 text-xs text-center mb-3">
+                        <p className="text-red-400 text-xs text-center mb-4">
                             {error}
                         </p>
                     )}
@@ -157,11 +157,10 @@ const handleLogin = async (e: React.FormEvent) => {
                     {/* BUTTON */}
                     <button
                         type="submit"
-                        className="w-full py-3 mt-2 rounded-md text-white font-semibold text-base
-                        bg-gradient-to-br from-slate-900 to-slate-800
-                        shadow-lg transition-all duration-300
-                        hover:-translate-y-1 hover:scale-[1.02]
-                        active:scale-95"
+                        className="w-full py-3 rounded-md text-white font-semibold text-base
+            bg-gradient-to-r from-blue-700 to-blue-500
+            shadow-lg transition-all duration-300
+            hover:scale-[1.03] active:scale-95"
                     >
                         Login
                     </button>
